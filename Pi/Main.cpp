@@ -28,15 +28,17 @@ main()
    memset( rx, 0, sizeof( rx ) );
 
    serialPort.Open( "/dev/ttyACM0", "9600" );
+   
+   unsigned int authCode = 55;
 
-   for( int i = 0; i < 10; i++ )
+   for( int i = 0; i < 1; i++ )
    {
 
-      test[0] = 1;
-      test[1] = 2;
-      test[2] = 3;
-      test[3] = 4;
-      test[4] = 5;
+      test[0] = authCode;
+      test[1] = 0;
+      test[2] = 0;
+      test[3] = 1;
+      test[4] = 1;
       test[5] = 6;
       test[6] = 7;
       test[7] = 8;
@@ -45,7 +47,57 @@ main()
 
       //serialPort.Write( test, sizeof( test ) );
       serialPort.Write( test, sizeof(test) );
-      usleep( 10 );
+      usleep( 1000000 );
+      
+      
+      test[0] = authCode;
+      test[1] = 80;
+      test[2] = 80;
+      test[3] = 0;
+      test[4] = 0;
+      test[5] = 6;
+      test[6] = 7;
+      test[7] = 8;
+      test[8] = 9;
+      test[9] = 0;
+
+      //serialPort.Write( test, sizeof( test ) );
+      serialPort.Write( test, sizeof(test) );
+      usleep( 6000000 );
+    
+
+      test[0] = authCode;
+      test[1] = -80;
+      test[2] = -80;
+      test[3] = 0;
+      test[4] = 0;
+      test[5] = 6;
+      test[6] = 7;
+      test[7] = 8;
+      test[8] = 9;
+      test[9] = 0;
+
+      //serialPort.Write( test, sizeof( test ) );
+      serialPort.Write( test, sizeof(test) );
+      usleep( 6000000 );
+
+      
+      test[0] = authCode;
+      test[1] = 0;
+      test[2] = 0;
+      test[3] = 1;
+      test[4] = 1;
+      test[5] = 6;
+      test[6] = 7;
+      test[7] = 8;
+      test[8] = 9;
+      test[9] = 0;
+      
+      //serialPort.Write( test, sizeof( test ) );
+      serialPort.Write( test, sizeof(test) );
+      usleep( 6000000 );
+      
+      
       //serialPort.Read( rx, sizeof( rx ) );
       //rx[9] = '.';
       //printf( "ONSTART %u : %u : %u : %u : %u : %u : %u : %u : %u : %u END\n", rx[0], rx[1], rx[2], rx[3], rx[4], rx[5], rx[6], rx[7], rx[8], rx[9] );

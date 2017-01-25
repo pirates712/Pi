@@ -23,6 +23,7 @@ boolean stringComplete = false;  // whether the string is complete
 
 char cmd[NUM_CMD_CHARS];
 unsigned int serCmdIdx = 0;
+unsigned int expAuthCode = 55;
 
 void setup() 
 {
@@ -30,21 +31,37 @@ void setup()
   Serial.begin(9600);
 }
 
+void printCmd()
+{
+  Serial.println("Got Command");
+  
+  if( expAuthCode == cmd[0] )
+  {
+     Serial.println("Command is Valid");    
+  }
+  else
+  {
+     Serial.println("Command is INVALID");
+     return;
+  }
+  
+  Serial.print("LeftMotorVal- ");
+  Serial.print(cmd[1], DEC);
+  Serial.print('\n');
+  
+  Serial.print("RightMotorVal- ");
+  Serial.print(cmd[2], DEC);
+  Serial.print('\n');
+  
+}
+
 void loop() 
 {
   // print the string when a newline arrives:
   if (stringComplete) 
   {
-    Serial.println("Got Command");
-    for( int i = 0; i < NUM_CMD_CHARS; i++ )
-    {
-       Serial.print(cmd[i], DEC);
-       Serial.print(" ");    
-      
-    }
-    
-    Serial.print('\n'); 
-   
+    printCmd();
+       
     stringComplete = false;
     memset( cmd, 0, sizeof( cmd ) );
     serCmdIdx = 0;
