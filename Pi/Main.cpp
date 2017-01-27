@@ -1,9 +1,9 @@
 #include "gpioControl.h"
-#include "SerialPort.h"
 #include <stdio.h>
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
+#include "arduino.h"
 
 #define NUM_CMD_CHARS 10
 
@@ -13,90 +13,36 @@ main()
 
    gpioControl myGpioController( "4", "out" );
    gpioControl myGpioInputController( "17", "in" );
-   SerialPort  serialPort;
+   
    myGpioController.testPrint();
 
    std::string inputState = "0";
 
-   char test[NUM_CMD_CHARS];
-   char rx[1];
-
-   //test[0] = 'i';
-   //test[1] = 100;
-   test[9] = '\n';
-
-   memset( rx, 0, sizeof( rx ) );
-
-   serialPort.Open( "/dev/ttyACM0", "9600" );
+   arduino mArduino;
+      
+   mArduino.setLMotorSpeed( 80 );
+   mArduino.setRMotorSpeed( 80 );
    
-   unsigned int authCode = 55;
+   usleep( 100000 );
+   
+   mArduino.sendCmd();
 
-   for( int i = 0; i < 1; i++ )
-   {
+   usleep( 5000000 );
+   
+   mArduino.setLMotorSpeed( -80 );
+   mArduino.setRMotorSpeed( -80 );
+   
+   mArduino.sendCmd();
+   
+   usleep( 5000000 );
+   
+   mArduino.setLMotorSpeed( 0 );
+   mArduino.setRMotorSpeed( 0 );
+   
+   mArduino.sendCmd();
 
-      test[0] = authCode;
-      test[1] = 0;
-      test[2] = 0;
-      test[3] = 1;
-      test[4] = 1;
-      test[5] = 6;
-      test[6] = 7;
-      test[7] = 8;
-      test[8] = 9;
-      test[9] = 0;
 
-      //serialPort.Write( test, sizeof( test ) );
-      serialPort.Write( test, sizeof(test) );
-      usleep( 1000000 );
-      
-      
-      test[0] = authCode;
-      test[1] = 80;
-      test[2] = 80;
-      test[3] = 0;
-      test[4] = 0;
-      test[5] = 6;
-      test[6] = 7;
-      test[7] = 8;
-      test[8] = 9;
-      test[9] = 0;
-
-      //serialPort.Write( test, sizeof( test ) );
-      serialPort.Write( test, sizeof(test) );
-      usleep( 6000000 );
-    
-
-      test[0] = authCode;
-      test[1] = -80;
-      test[2] = -80;
-      test[3] = 0;
-      test[4] = 0;
-      test[5] = 6;
-      test[6] = 7;
-      test[7] = 8;
-      test[8] = 9;
-      test[9] = 0;
-
-      //serialPort.Write( test, sizeof( test ) );
-      serialPort.Write( test, sizeof(test) );
-      usleep( 6000000 );
-
-      
-      test[0] = authCode;
-      test[1] = 0;
-      test[2] = 0;
-      test[3] = 1;
-      test[4] = 1;
-      test[5] = 6;
-      test[6] = 7;
-      test[7] = 8;
-      test[8] = 9;
-      test[9] = 0;
-      
-      //serialPort.Write( test, sizeof( test ) );
-      serialPort.Write( test, sizeof(test) );
-      usleep( 6000000 );
-      
+   
       
       //serialPort.Read( rx, sizeof( rx ) );
       //rx[9] = '.';
@@ -104,8 +50,6 @@ main()
       //printf( "ONSTART %u END\n", rx[0] );
       //std::cout << std::string( rx ) << std::endl;
       //memset( rx, 0, sizeof( rx ) );
-
-      usleep( 500000 );
 
       //test[0] = 'o';
       //test[1] = 8;
@@ -120,13 +64,6 @@ main()
       //memset( rx, 0, sizeof( rx ) );
 
       usleep( 500000 );
-
-   }
-   
-   serialPort.Close();
-
-
-
    /*
 	myGpioController.initialize();
 	myGpioInputController.initialize();

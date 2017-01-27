@@ -1,4 +1,4 @@
-
+#include "Pi_Arduino.h"
 
 // Pins for motor control
 const int rDir   = 7; 
@@ -9,12 +9,13 @@ const int lDir   = 8;
 const int lBrake = 4;
 const int lPWM   = 6;
 
-
 #define NUM_CMD_CHARS 10
+
+struct arduinoCmd cmd;
 
 boolean stringComplete = false;  // whether the string is complete
 
-char cmd[NUM_CMD_CHARS];
+char cmdBuf[sizeof(arduinoCmd)];
 unsigned int serCmdIdx = 0;
 unsigned int expAuthCode = 55;
 
@@ -41,36 +42,39 @@ void setup()
   digitalWrite( lDir, lMotorRev );
   digitalWrite( lBrake, 0 );
   
+  memset( &cmd, 0, sizeof(cmd) );
+  
 }
 
 void printCmd()
 {
   Serial.println("Got Command");
   
-  if( expAuthCode == cmd[0] )
+  if( expAuthCode == cmd.authCode )
   {
      Serial.println("Command is Valid");    
   }
   else
   {
-     Serial.println("Command is INVALID");
-     return;
+     Serial.print("Command is INVALID -");
+     Serial.print( cmd.authCode, DEC );
+     Serial.print("\n");
   }
   
   Serial.print("LeftMotorVal- ");
-  Serial.print(cmd[1], DEC);
+  Serial.print(cmd.lMotorVal, DEC);
   Serial.print('\n');
   
   Serial.print("RightMotorVal- ");
-  Serial.print(cmd[2], DEC);
+  Serial.print(cmd.rMotorVal, DEC);
   Serial.print('\n');
   
   Serial.print("LeftMotorBrake- ");
-  Serial.print(cmd[3], DEC);
+  Serial.print(cmd.lMotorBrake, DEC);
   Serial.print('\n');
   
   Serial.print("RightMotorBrake- ");
-  Serial.print(cmd[4], DEC);
+  Serial.print(cmd.rMotorBrake, DEC);
   Serial.print('\n');
   
 }
@@ -82,30 +86,12 @@ void loop()
   {
     printCmd();
     
-    char lMotorPwm = cmd[1];
-    char rMotorPwm = cmd[2];
+    char lMotorPwm = cmd.lMotorVal;
+    char rMotorPwm = cmd.rMotorVal;
     
-    if( lMotorPwm < 0 )
-    {
-      lMotorRev = 1;
-      lMotorPwm = abs(lMotorPwm);
-    }
-    else
-    {
-      lMotorRev = 0;
-    }
-    
-    if( rMotorPwm < 0 )
-    {
-      rMotorRev = 1;
-      rMotorPwm = abs(rMotorPwm);
-    }
-    else
-    {
-      rMotorRev = 0;
-    }
-    
-    
+    lMotorRev = cmd.lMotorDir;
+    rMotorRev = cmd.rMotorDir;
+   
         
     /////////////// Update motor speeds //////////////////////////////
     
@@ -115,15 +101,14 @@ void loop()
     analogWrite( lPWM, lMotorPwm );
     analogWrite( rPWM, rMotorPwm );
 
-    digitalWrite( lBrake, cmd[3] );
-    digitalWrite( rBrake, cmd[4] );
+    digitalWrite( lBrake, cmd.lMotorBrake );
+    digitalWrite( rBrake, cmd.rMotorBrake );
 
       
     /////////////////////////////////////////////////////////////////
        
     stringComplete = false;
-    memset( cmd, 0, sizeof( cmd ) );
-    serCmdIdx = 0;
+    
   }
 }
 
@@ -136,16 +121,19 @@ void loop()
 void serialEvent()
 {
   
-  while (Serial.available() && serCmdIdx < NUM_CMD_CHARS)
+  while (Serial.available() && serCmdIdx < sizeof(cmd))
   {
     // get the new byte:
-    cmd[serCmdIdx] = (char)Serial.read(); 
+    cmdBuf[serCmdIdx] = (char)Serial.read(); 
     serCmdIdx++;
 
   }
-  if( serCmdIdx == NUM_CMD_CHARS )
+  if( serCmdIdx == sizeof(cmd) )
   {
+     memcpy( &cmd, cmdBuf, sizeof(cmd) );
      stringComplete = true;
+     memset( cmdBuf, 0, sizeof( cmdBuf ) );
+     serCmdIdx = 0;
   } 
 }
 

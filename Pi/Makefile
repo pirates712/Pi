@@ -6,6 +6,9 @@ CPPFLAGS =
 
 .PHONY: default all clean
 
+INCLUDEPATH += ../include
+INCLUDEPATHARG=$(foreach d, $(INCLUDEPATH), -I $d)
+
 default: $(TARGET)
 all: default
 
@@ -14,7 +17,7 @@ HEADERS = $(wildcard *.h)
 
 #the -c flag means "compile only"
 %.o: %.cpp $(HEADERS)
-	$(CPP) $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) $(INCLUDEPATHARG) -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
