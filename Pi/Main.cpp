@@ -3,9 +3,16 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
+#include <thread>
 #include "arduino.h"
 
 #define NUM_CMD_CHARS 10
+
+void runArduinoThread( arduino * a )
+{
+   a->workLoop();
+}
+
 
 main()
 {
@@ -19,29 +26,28 @@ main()
    std::string inputState = "0";
 
    arduino mArduino;
+   std::thread arduinoThread( runArduinoThread, &mArduino );
       
    mArduino.setLMotorSpeed( 80 );
    mArduino.setRMotorSpeed( 80 );
    
    usleep( 100000 );
    
-   mArduino.sendCmd();
 
    usleep( 5000000 );
    
    mArduino.setLMotorSpeed( -80 );
    mArduino.setRMotorSpeed( -80 );
    
-   mArduino.sendCmd();
    
    usleep( 5000000 );
    
    mArduino.setLMotorSpeed( 0 );
    mArduino.setRMotorSpeed( 0 );
    
-   mArduino.sendCmd();
-
-
+   
+   mArduino.setRunning( false );
+   arduinoThread.join();
    
       
       //serialPort.Read( rx, sizeof( rx ) );
@@ -63,7 +69,6 @@ main()
       //std::cout << std::string( rx ) << std::endl;
       //memset( rx, 0, sizeof( rx ) );
 
-      usleep( 500000 );
    /*
 	myGpioController.initialize();
 	myGpioInputController.initialize();

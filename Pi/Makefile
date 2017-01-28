@@ -1,7 +1,7 @@
 TARGET = prog
-LIBS = 
+LIBS = -pthread
 CPP = g++
-CPPFLAGS = 
+CPPFLAGS = -std=c++11 -pthread
 #-g -Wall
 
 .PHONY: default all clean

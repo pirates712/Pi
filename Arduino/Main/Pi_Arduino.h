@@ -2,7 +2,7 @@
 #define PI_ARDUINO_H
 struct arduinoCmd
 {
-    unsigned char authCode;
+    signed char authCode;
  
     unsigned char lMotorDir;
     unsigned char lMotorVal;
