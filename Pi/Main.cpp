@@ -19,9 +19,9 @@ main()
 {
    printf("Starting up!\n");
 
-   net_connect mTestSocket;
+   net_connect mTestSocket(265);
 
-   mTestSocket.test();
+   std::thread rxThread( start_receive, &mTestSocket, 9595 );
 
 
 #if 0
@@ -31,31 +31,35 @@ main()
    myGpioController.testPrint();
 
    std::string inputState = "0";
-
+#endif
    arduino mArduino;
    std::thread arduinoThread( runArduinoThread, &mArduino );
-
-   mArduino.setLMotorSpeed( 80 );
-   mArduino.setRMotorSpeed( 80 );
-
-   usleep( 100000 );
-
-
-   usleep( 5000000 );
-
-   mArduino.setLMotorSpeed( -80 );
-   mArduino.setRMotorSpeed( -80 );
-
-
-   usleep( 5000000 );
 
    mArduino.setLMotorSpeed( 0 );
    mArduino.setRMotorSpeed( 0 );
 
+   mArduino.setLMotorSpeed( 0 );
+   mArduino.setRMotorSpeed( 0 );
+
+   mArduino.setLMotorSpeed( 0 );
+   mArduino.setRMotorSpeed( 0 );
+
+   while(1)
+   {
+      char * buf = mTestSocket.getBuffer();
+      printf("MAIN -- Here is the message: %d %d %d %d\n",buf[0], buf[1], buf[2], buf[3]);
+      mArduino.setLMotorSpeed( buf[0] );
+      mArduino.setRMotorSpeed( buf[0] );
+      free( buf );
+   }
+   //mArduino.setLMotorSpeed( 80 );
+   //mArduino.setRMotorSpeed( 80 );
+
 
    mArduino.setRunning( false );
    arduinoThread.join();
-#endif
+   rxThread.join();
+
       //serialPort.Read( rx, sizeof( rx ) );
       //rx[9] = '.';
       //printf( "ONSTART %u : %u : %u : %u : %u : %u : %u : %u : %u : %u END\n", rx[0], rx[1], rx[2], rx[3], rx[4], rx[5], rx[6], rx[7], rx[8], rx[9] );

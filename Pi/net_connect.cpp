@@ -6,20 +6,48 @@
 
 #include <string.h>
 
-net_connect::net_connect()
+void start_receive( net_connect * n, int port )
 {
-    printf("Constructing net_connect Class!\n");
+   n->receive( port );
+}
+
+net_connect::net_connect(unsigned int buffsize)
+{
+    printf("Constructing net_connect Class! buffsize %u\n", buffsize);
+    mBuffSize = buffsize;
+    mNumBufs = 0;
 }
 
 net_connect::~net_connect()
 {
 }
 
-void net_connect::test()
+// You must free the buffer you receive!!!!!!!!!!!
+char * net_connect::getBuffer()
+{
+   char * retBuffer = NULL;
+   //printf("getting buf\n");
+   std::unique_lock<std::mutex> lk(bufListLck);
+   bufListCV.wait(lk, [&]{return (mNumBufs > 0);});
+
+   retBuffer = buffers.front();
+   buffers.pop_front();
+   mNumBufs--;
+   //printf("- %u bufs\n", mNumBufs);
+   lk.unlock();
+   return retBuffer;
+}
+
+unsigned int net_connect::getBufferSize()
+{
+   return mBuffSize;
+}
+
+void net_connect::receive( int port )
 {
    int sockfd, newsockfd, portno;
    socklen_t clilen;
-   char buffer[256];
+   char * newbuffer = NULL;
    struct sockaddr_in serv_addr, cli_addr;
    int  n;
 
@@ -34,7 +62,7 @@ void net_connect::test()
 
    /* Initialize socket structure */
    bzero((char *) &serv_addr, sizeof(serv_addr));
-   portno = 9595;
+   portno = port;
 
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -63,26 +91,57 @@ void net_connect::test()
       exit(1);
    }
 
-   /* If connection is established then start communicating */
-   bzero(buffer,256);
-   n = read( newsockfd,buffer,255 );
-
-   if (n < 0)
+   while(1)
    {
-      perror("ERROR reading from socket");
-      exit(1);
-   }
+      /* If connection is established then start communicating */
+      newbuffer = (char *)malloc( mBuffSize );
+      if( newbuffer == NULL )
+      {
+         printf("Error! Unable to allocate memory for newbuffer!\n");
+         break;
+      }
+      bzero(newbuffer,mBuffSize);
+      int value = 0;
+      n = read( newsockfd,newbuffer,mBuffSize );
+      if( n == 0 )
+      {
+         break;
+      }
 
-   printf("Here is the message: %s\n",buffer);
+      if (n < 0)
+      {
+         perror("ERROR reading from socket");
+         exit(1);
+      }
+
+      //printf("Here is the message: %d %d %d %d\n",newbuffer[0], newbuffer[1], newbuffer[2], newbuffer[3]);
+
+      {
+         std::lock_guard<std::mutex> lk(bufListLck);
+         buffers.push_back( newbuffer );
+         mNumBufs++;
+         //printf("+ %u bufs\n", mNumBufs);
+      }
+      bufListCV.notify_one();
+
+      newbuffer = NULL;
+
+      // arbitrary limit
+      if( buffers.size() > 15 )
+      {
+         printf("Too many buffers allocated, exiting...\n");
+         break;
+      }
+   }
 
    /* Write a response to the client */
-   n = write(newsockfd,"I got your message",18);
-
-   if (n < 0)
-   {
-      perror("ERROR writing to socket");
-      exit(1);
-   }
+   // n = write(newsockfd,"I got your message",18);
+   //
+   // if (n < 0)
+   // {
+   //    perror("ERROR writing to socket");
+   //    exit(1);
+   // }
 
    return;
 }

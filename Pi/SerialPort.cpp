@@ -297,11 +297,10 @@ bool SerialPort::SetTimeout( unsigned timeout )
 size_t SerialPort::Write( const void *buf, size_t bytesToWrite )
 {
    int  bytesWritten;
-
    bytesWritten = write( m_fd, buf, bytesToWrite );
    if( bytesWritten < 0 )
    {
-      //LogError( "write failed: %d\n", errno );
+      printf( "write failed: %d\n", errno );
       bytesWritten = 0;
    }
 

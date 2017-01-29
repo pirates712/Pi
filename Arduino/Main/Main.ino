@@ -25,7 +25,7 @@ unsigned int rMotorRev = 0;
 void setup() 
 {
   // initialize serial:
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   // initialize motor control pins
   pinMode(rDir, OUTPUT);
@@ -48,34 +48,34 @@ void setup()
 
 void printCmd()
 {
-  Serial.println("Got Command");
+  //Serial.println("Got Command");
   
   if( expAuthCode == cmd.authCode )
   {
-     Serial.println("Command is Valid");    
+     ///Serial.println("Command is Valid");    
   }
   else
   {
-     Serial.print("Command is INVALID -");
-     Serial.print( cmd.authCode, DEC );
-     Serial.print("\n");
+     //Serial.print("Command is INVALID -");
+     //Serial.print( cmd.authCode, DEC );
+     //Serial.print("\n");
   }
   
-  Serial.print("LeftMotorVal- ");
-  Serial.print(cmd.lMotorVal, DEC);
-  Serial.print('\n');
+  //Serial.print("LeftMotorVal- ");
+  //Serial.print(cmd.lMotorVal, DEC);
+  //Serial.print('\n');
   
-  Serial.print("RightMotorVal- ");
-  Serial.print(cmd.rMotorVal, DEC);
-  Serial.print('\n');
+  //Serial.print("RightMotorVal- ");
+  //Serial.print(cmd.rMotorVal, DEC);
+  //Serial.print('\n');
   
-  Serial.print("LeftMotorBrake- ");
-  Serial.print(cmd.lMotorBrake, DEC);
-  Serial.print('\n');
+  //Serial.print("LeftMotorBrake- ");
+  //Serial.print(cmd.lMotorBrake, DEC);
+  //Serial.print('\n');
   
-  Serial.print("RightMotorBrake- ");
-  Serial.print(cmd.rMotorBrake, DEC);
-  Serial.print('\n');
+  //Serial.print("RightMotorBrake- ");
+  //Serial.print(cmd.rMotorBrake, DEC);
+  //Serial.print('\n');
   
 }
 
