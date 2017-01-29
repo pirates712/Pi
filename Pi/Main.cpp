@@ -35,21 +35,13 @@ main()
    arduino mArduino;
    std::thread arduinoThread( runArduinoThread, &mArduino );
 
-   mArduino.setLMotorSpeed( 0 );
-   mArduino.setRMotorSpeed( 0 );
-
-   mArduino.setLMotorSpeed( 0 );
-   mArduino.setRMotorSpeed( 0 );
-
-   mArduino.setLMotorSpeed( 0 );
-   mArduino.setRMotorSpeed( 0 );
+   mArduino.setMotorStates( 0, 0, 0, 0, 0, 0 );
 
    while(1)
    {
       char * buf = mTestSocket.getBuffer();
       printf("MAIN -- Here is the message: %d %d %d %d\n",buf[0], buf[1], buf[2], buf[3]);
-      mArduino.setLMotorSpeed( buf[0] );
-      mArduino.setRMotorSpeed( buf[0] );
+      mArduino.setMotorStates( buf[0], buf[0], 0, 0, 0, 0 );
       free( buf );
    }
    //mArduino.setLMotorSpeed( 80 );

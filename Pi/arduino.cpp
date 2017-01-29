@@ -12,8 +12,6 @@ arduino::arduino()
 {
     printf("Constructing Arduino Class!\n");
     serialPort.Open( "/dev/ttyACM0", "115200" );
-    memset( &cmd, 0, sizeof(cmd));
-    cmd.authCode = 55;
     running = true;
 }
 
@@ -24,15 +22,13 @@ arduino::~arduino()
 
 void arduino::workLoop()
 {
-   while( running )
+   struct arduinoCmd cmd;
+   // Run as long as we are told. When we are told to stop
+   // emty our command queue before actually stopping
+   while( running || (cmdQueue.size() > 0 ))
    {
-      cmdLck.lock();
-      //printf("snd locked\n");
-      sendCmd();
-      cmdLck.unlock();
-      //printf("snd unlocked\n");
-      //printf("sent\n");
-      usleep( THREAD_SLEEP_TIME );
+      cmd = cmdQueue.getAndPopFront();
+      serialPort.Write( &cmd, sizeof(cmd) );
    }
    printf("%s: done!\n", __func__);
 }
@@ -43,77 +39,41 @@ void arduino::setRunning( bool amRunning )
    {
       printf("%s: Changing from %s to %s\n", __func__, (running?"RUNNING":"NOT RUNNING"), (amRunning?"RUNNING":"NOT RUNNING"));
    }
-   // Sleep for 3x thread sleep time to ensure last command is issued
-   usleep(3*THREAD_SLEEP_TIME);
    running = amRunning;
 }
 
-void arduino::sendCmd()
+void arduino::setMotorStates( unsigned int lMotorSpeed, unsigned int rMotorSpeed,
+                              bool lMotorRev, bool rMotorRev,
+                              bool lMotorBrake, bool rMotorBrake)
 {
-   serialPort.Write( &cmd, sizeof(cmd) );
+   // Don't add new commands if we aren't running!
+   if( running )
+   {
+      struct arduinoCmd newCommand;
+
+      newCommand.authCode = 55;
+
+      newCommand.lMotorVal = validateSpeed( lMotorSpeed );
+      newCommand.rMotorVal = validateSpeed( rMotorSpeed );
+
+      newCommand.lMotorDir = (lMotorRev?1:0);
+      newCommand.rMotorDir = (rMotorRev?1:0);
+
+      newCommand.rMotorBrake = (lMotorBrake?1:0);
+      newCommand.rMotorBrake = (rMotorBrake?1:0);
+
+      cmdQueue.push_back(newCommand);
+   }
 }
 
-// Takes a signed int representing speed, where negative means reverse
-void arduino::setLMotorSpeed( int speed )
-{
-   int validSpeed = validateSpeed( speed );
-   int dir        = getDirFromSpeed( speed );
-
-   //printf("Setting lMotor Speed to %d!\n", validSpeed);
-
-   cmdLck.lock();
-   //printf("slms locked\n");
-   cmd.lMotorVal = validSpeed;
-   cmd.lMotorDir = dir;
-   cmdLck.unlock();
-   //printf("slms unlocked\n");
-}
-
-// Takes a signed int representing speed, where negative means reverse
-void arduino::setRMotorSpeed( int speed )
-{
-   int validSpeed = validateSpeed( speed );
-   int dir        = getDirFromSpeed( speed );
-
-   //printf("Setting rMotor Speed to %d!\n", validSpeed);
-   cmdLck.lock();
-   //printf("srms locked\n");
-   cmd.rMotorVal = validSpeed;
-   cmd.rMotorDir = dir;
-   cmdLck.unlock();
-   //printf("srms unlocked\n");
-}
-
-int arduino::validateSpeed( int speed )
+unsigned int arduino::validateSpeed( unsigned int speed )
 {
    int validSpeed = speed;
-
    // Validate range, should be -255 to 255
    if( validSpeed > MAX_SPEED_MAG )
    {
        validSpeed = MAX_SPEED_MAG;
    }
-   else if( validSpeed < -MAX_SPEED_MAG)
-   {
-       validSpeed = -MAX_SPEED_MAG;
-   }
-
-   if( validSpeed < 0 )
-   {
-      validSpeed = abs(validSpeed);
-   }
 
    return validSpeed;
-}
-
-int arduino::getDirFromSpeed( int speed )
-{
-   int dir = 0;
-
-   if( speed < 0 )
-   {
-      dir = 1;
-   }
-
-   return dir;
 }
