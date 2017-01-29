@@ -2,16 +2,21 @@
 #define NET_CONNECT_H
 
 #include "threadSafeList.h"
+#include <mutex>
 
 class net_connect
 {
 public:
 
-   net_connect( unsigned int buffsize );
+   net_connect( unsigned int buffsize, unsigned int portno );
 
    ~net_connect();
 
-   void receive( int port );
+   void receive();
+
+   int waitForConnection();
+
+   bool isConnected();
 
    char * getBuffer();
    unsigned int getBufferSize();
@@ -24,8 +29,14 @@ private:
 
    threadSafeList<char *> mTSList;
 
+   bool mConnected;
+   int  mSockfd;
+   unsigned int mPort;
+
+   std::mutex mConStateLck;
+
 };
 
-void start_receive( net_connect * n, int port );
+void start_receive( net_connect * n );
 
 #endif

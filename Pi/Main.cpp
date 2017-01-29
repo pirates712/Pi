@@ -19,9 +19,7 @@ main()
 {
    printf("Starting up!\n");
 
-   net_connect mTestSocket(265);
-
-   std::thread rxThread( start_receive, &mTestSocket, 9595 );
+   net_connect mTestSocket(265, 9595);
 
 
 #if 0
@@ -37,7 +35,12 @@ main()
 
    mArduino.setMotorStates( 0, 0, 0, 0, 0, 0 );
 
-   while(1)
+   mTestSocket.waitForConnection();
+
+   // Once connected, start receiving data from the client
+   std::thread rxThread( start_receive, &mTestSocket );
+
+   while(mTestSocket.isConnected())
    {
       char * buf = mTestSocket.getBuffer();
       printf("MAIN -- Here is the message: %d %d %d %d\n",buf[0], buf[1], buf[2], buf[3]);

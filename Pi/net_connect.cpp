@@ -6,19 +6,31 @@
 
 #include <string.h>
 
-void start_receive( net_connect * n, int port )
+void start_receive( net_connect * n )
 {
-   n->receive( port );
+   n->receive();
 }
 
-net_connect::net_connect(unsigned int buffsize)
+net_connect::net_connect(unsigned int buffsize, unsigned int portno)
 {
     printf("Constructing net_connect Class! buffsize %u\n", buffsize);
     mBuffSize = buffsize;
+    mConnected = false;
+    mPort = portno;
 }
 
 net_connect::~net_connect()
 {
+}
+
+bool net_connect::isConnected()
+{
+   bool connected;
+   {
+      std::lock_guard<std::mutex> lk(mConStateLck);
+      connected = mConnected;
+   }
+   return connected;
 }
 
 // You must free the buffer you receive!!!!!!!!!!!
@@ -32,13 +44,11 @@ unsigned int net_connect::getBufferSize()
    return mBuffSize;
 }
 
-void net_connect::receive( int port )
+int net_connect::waitForConnection()
 {
-   int sockfd, newsockfd, portno;
+   int sockfd;
    socklen_t clilen;
-   char * newbuffer = NULL;
    struct sockaddr_in serv_addr, cli_addr;
-   int  n;
 
    /* First call to socket() function */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,22 +56,21 @@ void net_connect::receive( int port )
    if (sockfd < 0)
    {
       perror("ERROR opening socket");
-      exit(1);
+      return -1;
    }
 
    /* Initialize socket structure */
    bzero((char *) &serv_addr, sizeof(serv_addr));
-   portno = port;
 
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_addr.s_addr = INADDR_ANY;
-   serv_addr.sin_port = htons(portno);
+   serv_addr.sin_port = htons(mPort);
 
    /* Now bind the host address using bind() call.*/
    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
    {
       perror("ERROR on binding");
-      exit(1);
+      return -1;
    }
 
    /* Now start listening for the clients, here process will
@@ -72,14 +81,27 @@ void net_connect::receive( int port )
    clilen = sizeof(cli_addr);
 
    /* Accept actual connection from the client */
-   newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+   mSockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
 
-   if (newsockfd < 0)
+   if (mSockfd < 0)
    {
       perror("ERROR on accept");
-      exit(1);
+      return -1;
    }
 
+   //Set connection state on success
+   {
+      std::lock_guard<std::mutex> lk(mConStateLck);
+      mConnected = true;
+   }
+
+   return 0;
+}
+
+void net_connect::receive()
+{
+   char * newbuffer = NULL;
+   int  bytesRead;
    while(1)
    {
       /* If connection is established then start communicating */
@@ -91,16 +113,24 @@ void net_connect::receive( int port )
       }
       bzero(newbuffer,mBuffSize);
       int value = 0;
-      n = read( newsockfd,newbuffer,mBuffSize );
-      if( n == 0 )
+      bytesRead = read( mSockfd,newbuffer,mBuffSize );
+      if( bytesRead == 0 )
       {
+         {
+            std::lock_guard<std::mutex> lk(mConStateLck);
+            mConnected = false;
+         }
          break;
       }
 
-      if (n < 0)
+      if (bytesRead < 0)
       {
          perror("ERROR reading from socket");
-         exit(1);
+         {
+            std::lock_guard<std::mutex> lk(mConStateLck);
+            mConnected = false;
+         }
+         break;
       }
 
       //printf("Here is the message: %d %d %d %d\n",newbuffer[0], newbuffer[1], newbuffer[2], newbuffer[3]);
@@ -116,15 +146,6 @@ void net_connect::receive( int port )
          break;
       }
    }
-
-   /* Write a response to the client */
-   // n = write(newsockfd,"I got your message",18);
-   //
-   // if (n < 0)
-   // {
-   //    perror("ERROR writing to socket");
-   //    exit(1);
-   // }
 
    return;
 }
