@@ -15,7 +15,6 @@ net_connect::net_connect(unsigned int buffsize)
 {
     printf("Constructing net_connect Class! buffsize %u\n", buffsize);
     mBuffSize = buffsize;
-    mNumBufs = 0;
 }
 
 net_connect::~net_connect()
@@ -25,17 +24,7 @@ net_connect::~net_connect()
 // You must free the buffer you receive!!!!!!!!!!!
 char * net_connect::getBuffer()
 {
-   char * retBuffer = NULL;
-   //printf("getting buf\n");
-   std::unique_lock<std::mutex> lk(bufListLck);
-   bufListCV.wait(lk, [&]{return (mNumBufs > 0);});
-
-   retBuffer = buffers.front();
-   buffers.pop_front();
-   mNumBufs--;
-   //printf("- %u bufs\n", mNumBufs);
-   lk.unlock();
-   return retBuffer;
+   return mTSList.getAndPopFront();
 }
 
 unsigned int net_connect::getBufferSize()
@@ -116,18 +105,12 @@ void net_connect::receive( int port )
 
       //printf("Here is the message: %d %d %d %d\n",newbuffer[0], newbuffer[1], newbuffer[2], newbuffer[3]);
 
-      {
-         std::lock_guard<std::mutex> lk(bufListLck);
-         buffers.push_back( newbuffer );
-         mNumBufs++;
-         //printf("+ %u bufs\n", mNumBufs);
-      }
-      bufListCV.notify_one();
+      mTSList.push_back( newbuffer );
 
       newbuffer = NULL;
 
       // arbitrary limit
-      if( buffers.size() > 15 )
+      if( mTSList.size() > 15 )
       {
          printf("Too many buffers allocated, exiting...\n");
          break;

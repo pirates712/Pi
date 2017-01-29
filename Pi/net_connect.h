@@ -1,9 +1,7 @@
 #if !defined( NET_CONNECT_H )
 #define NET_CONNECT_H
 
-#include <mutex>
-#include <condition_variable>
-#include <list>
+#include "threadSafeList.h"
 
 class net_connect
 {
@@ -19,13 +17,12 @@ public:
    unsigned int getBufferSize();
 
 private:
-   std::mutex bufListLck;
-   std::condition_variable bufListCV;
-   unsigned int mNumBufs;
+
    unsigned int mBuffSize;
    net_connect( const net_connect & copy );
    net_connect &operator =( const net_connect &rhs );
-   std::list<char *> buffers;
+
+   threadSafeList<char *> mTSList;
 
 };
 

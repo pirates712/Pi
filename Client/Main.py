@@ -16,9 +16,11 @@ clientsocket.connect(('192.168.0.200', 9595))
 
 running = True
 while running:
-    time.sleep(.1)
+    #time.sleep(.05)
+    time.sleep(1)
     state = controller.getState()
     #print( state )
+       
     cmd = piCmd()
     cmd.lMotorVal = int(state["rtrigger"])
     cmd.rMotorVal = int(state["rtrigger"])
